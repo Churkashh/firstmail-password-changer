@@ -1,12 +1,12 @@
-from concurrent.futures import ThreadPoolExecutor
-from Logger import logging
-
 import requests
 import time
 import os
 import random
 import json
 import string
+
+from concurrent.futures import ThreadPoolExecutor
+from Logger import logging
 
 
 emails = open('./Input/Mails.txt', 'r').read().splitlines()
