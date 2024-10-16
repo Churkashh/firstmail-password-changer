@@ -1,0 +1,11 @@
+{
+    "Main": {
+        "Threads": 1,
+        "X-Api-Key": ""
+    },
+    
+    "Password": {
+        "Generate_password": true,
+        "new_password": ""
+    }
+}

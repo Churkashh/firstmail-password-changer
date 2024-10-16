@@ -1,0 +1,3 @@
+mail:pass
+mail:pass:value
+mail|pass
