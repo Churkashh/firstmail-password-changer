@@ -1,12 +1,12 @@
+from concurrent.futures import ThreadPoolExecutor
+from Logger import logging
+
 import requests
 import time
 import os
 import random
 import json
 import string
-
-from concurrent.futures import ThreadPoolExecutor
-from Logger import logging
 
 
 emails = open('./Input/Mails.txt', 'r').read().splitlines()
@@ -28,68 +28,67 @@ def format_line(line: str):
     return parts[0], parts[1]
     
     
-class Firstmail():
+class Firstmail:
     def change_password(email: str, cpass: str, npass: str):
         while True:
             try:
                 payload = {
-                    "username": email,
-                    "cpassword": cpass,
-                    "npassword": npass
+                    "email": email,
+                    "current_password": cpass,
+                    "new_password": npass
                 }
                 
-                resp = session.post("https://api.firstmail.ltd/v1/mail/change/password", json=payload)
-                response = resp.text
+                resp = session.post("https://firstmail.ltd/api/v1/email/password/change/", json=payload)
+                response = str(resp.json())
                 
-                if resp.status_code == 200:
-                    if "Password was updated" in response:
-                        logging.success("Succesfully changed password.", email, resp.status_code)
-                        return True, 'Completed'
+                if resp.status_code == 200 and resp.json()["success"]:
+                    logging.success("Succesfully changed password.", email, resp.status_code)
+                    return True, 'Completed'
+                
+                elif resp.status_code == 400:
+                    if 'установлена двухфакторная аутентификация' in response:
+                        logging.error("Email has 2FA.", email, resp.status_code)
+                        return False, 'Email_has_2FA'
                     
-                    elif "The password was changed less than a day ago" in response:
-                        logging.error("The password was changed less than a day ago.", email, resp.status_code)
-                        return True, 'Password_was_changed_less_than_a_day_ago'
+                    elif 'установлен резервный email' in response:
+                        logging.error("Reserve email set.", email, resp.status_code)
+                        return False, 'Reserve_email_set'
                     
-                    elif "wrongPassword" in response:
+                    elif 'не менее 8 символов' in response:
+                        logging.error("The password must consist of 8-20 characters. English + special characters", email, resp.status_code)
+                        return False, None
+                    
+                    else:
+                        logging.error(f"Unknown validation error: {response}", email, resp.status_code)
+                        return False, None
+                
+                elif resp.status_code == 401:
+                    if 'Недействительный API ключ' in response:
+                        logging.error("Invalid ApiKey.", email, resp.status_code)
+                        return False, None
+                    
+                    elif 'Неверный текущий пароль' in response:
                         logging.error("Password does not match.", email, resp.status_code)
                         return True, 'Password_does_not_match'
                     
-                    elif "Required username and cpassword and npassword" in response:
-                        logging.error("Required username and cpassword and npassword (probably some of config values are missing).", email, resp.status_code)
-                        return False, None
-                    
-                    elif "The password must consist of 8-20 characters" in response:
-                        logging.error("The password must consist of 8-20 characters, English. language + special characters", email, resp.status_code)
-                        return False, None
-
                     else:
-                        logging.error(f"Unknown error {resp.text}", email, resp.status_code)
+                        logging.error(f"Unknown error {response}", email, resp.status_code)
                         return True, 'Unknown_error'
-                
-                elif resp.status_code == 403:
-                    if "IP missmatch" in response:
-                        logging.error("ApiKey IP missmatch.", email, resp.status_code)
-                        return False, None
                     
-                    elif "Api rate limit reached" in response:
-                        logging.ratelimit("Resource has been ratelimited. Sleeping for 30 seconds...", email, resp.status_code)
-                        time.sleep(30)
-                        continue
-                    
-                    elif "Api user not found" in response:
-                        logging.error("Invalid ApiKey.", email, resp.status_code)
-                        return False, None
+                elif resp.status_code == 404:
+                    logging.error("Email not found.", email, resp.status_code)
+                    return True, 'Email_not_found'
                     
                 elif resp.status_code == 500:
                     logging.error("Internal server error.", email, resp.status_code)
                     return True, 'Internal_server_error'
                 
                 else:
-                    logging.error(f"Unknown error {resp.text}", email, resp.status_code)
+                    logging.error(f"Unknown error {response}", email, resp.status_code)
                     return True, 'Unknown_error'
                 
             except Exception as e:
-                print(e)
+                logging.error(f"Exception occured: {e}")
                 time.sleep(1)
             
             
