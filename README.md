@@ -22,7 +22,7 @@
     ```
 
 2. Get your **X-Api-Key**:
-   - Head over to [Firstmail API Dashboard](https://firstmail.ltd/lk/api) to generate your API key.
+   - Head over to [Firstmail API Dashboard](https://firstmail.ltd/panel/api/keys/create/) to generate your API key.
 
 3. Configure your API key and settings in `config.json`:
     ```json
